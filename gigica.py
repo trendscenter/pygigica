@@ -70,7 +70,7 @@ def gigicar(FmriMatr,ICRefMax):
 
 	n,m = FmriMatr.shape
 	n2,m2 = ICRefMax.shape
-	logger.info("Starting GIGICA at %s" % str(datetime.datetime.now()))
+	logger.info("\n\nStarting GIGICA at %s" % str(datetime.datetime.now()))
 	logger.info("Reference size %s\tSignal size %s" % (FmriMatr.shape, ICRefMax.shape) )
 	FmriMat=FmriMatr - np.tile(np.mean(FmriMatr,1),(m,1)).T
 	CovFmri = np.matmul(FmriMat, FmriMat.T) / m
@@ -90,7 +90,7 @@ def gigicar(FmriMatr,ICRefMax):
 	numpc=0
 	for i in range(cols):
 	    if dsort[i]>thr:
-			numpc=numpc+1
+	        numpc=numpc+1
 	logger.info("Performing PCA for %d components" % numpc)
 
 	Epart=Esort[:,1:numpc]
@@ -98,10 +98,12 @@ def gigicar(FmriMatr,ICRefMax):
 	Lambda_part=np.diag(dpart)
 	logger.info("Whitening source signal")
 	WhitenMatrix=np.matmul((np.linalg.inv(sqrtm(Lambda_part))), Epart.T)
+	logger.info("Done whitening")
 	Y=np.matmul(WhitenMatrix, FmriMat)
-
+	logger.info("Done projecting")
+	logger.info("Normalizing...")
 	if thr<1e-10 and numpc<n:
-	    for i in range(Y.shape[0]):
+		for i in range(Y.shape[0]):
 			Y[i,:]=Y[i,:]/np.std(Y[i,:])
 
 	logger.info("Normalizing source signal")
@@ -124,19 +126,19 @@ def gigicar(FmriMatr,ICRefMax):
 	ICOutMax=np.zeros((EsICnum,m))
 	logger.info("Starting with EGv=%f" % EGv)
 	for ICnum in range(EsICnum):
-	    logger.info('gigicar component: %d/%d\n' % (ICnum, EsICnum))
-	    reference=ICRefMaxN[ICnum,:]
-	    wc=(np.matmul(reference, Yinv)).T
-	    wc=wc/np.linalg.norm(wc)
-	    y1=np.matmul(wc.T, Y)
-	    EyrInitial=(1/m)*(y1)*reference.T
-	    NegeInitial=nege(y1)
-	    c=(np.tan((EyrInitial*np.pi)/2))/NegeInitial
-	    IniObjValue=a*ErChuPai*np.arctan(c*NegeInitial)+b*EyrInitial
+		logger.info('gigicar component: %d/%d' % (ICnum, EsICnum))
+		reference=ICRefMaxN[ICnum,:]
+		wc=(np.matmul(reference, Yinv)).T
+		wc=wc/np.linalg.norm(wc)
+		y1=np.matmul(wc.T, Y)
+		EyrInitial=(1/m)*(y1)*reference.T
+		NegeInitial=nege(y1)
+		c=(np.tan((EyrInitial*np.pi)/2))/NegeInitial
+		IniObjValue=a*ErChuPai*np.arctan(c*NegeInitial)+b*EyrInitial
 
-	    itertime=1
-	    Nemda=1
-	    for i in range(iternum):
+		itertime=1
+		Nemda=1
+		for i in range(iternum):
 			Cosy1=np.cosh(y1)
 			logCosy1=np.log(Cosy1)
 			EGy1=np.mean(logCosy1)
@@ -164,13 +166,12 @@ def gigicar(FmriMatr,ICRefMax):
 				break
 			elif itertime==iternum:
 				break
-
 			IniObjValue=PreObjValue
 			y1=y3
 			wc=wx
 			itertime=itertime+1
-	    Source=wx.T*Y
-	    ICOutMax[ICnum,:]=Source
+		Source=wx.T*Y
+		ICOutMax[ICnum,:]=Source
 	TCMax=(1/m)*FmriMatr*ICOutMax.T
 	return ICOutMax,TCMax
 
